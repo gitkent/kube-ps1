@@ -41,6 +41,7 @@ KUBE_PS1_DISABLE_PATH="${HOME}/.kube/kube-ps1/disabled"
 KUBE_PS1_LAST_TIME=0
 KUBE_PS1_CLUSTER_FUNCTION="${KUBE_PS1_CLUSTER_FUNCTION}"
 KUBE_PS1_NAMESPACE_FUNCTION="${KUBE_PS1_NAMESPACE_FUNCTION}"
+KUBE_PS1_SHOW_STATUS="${KUBE_PS1_SHOW_STATUS:-true}"
 
 # Determine our shell
 if [ "${ZSH_VERSION-}" ]; then
@@ -267,6 +268,26 @@ _kube_ps1_get_context_ns() {
 
   _kube_ps1_get_context
   _kube_ps1_get_ns
+  _kube_ps1_get_status
+}
+
+_kube_ps1_get_status() {
+  [[ "${KUBE_PS1_SHOW_STATUS}" == false ]] && return
+
+  if which kubectl &> /dev/null; then
+    if kubectl get namespaces &> /dev/null; then
+      KUBE_PS1_STATUS_COLOR="green"
+      KUBE_PS1_STATUS=" LOGGED-IN"
+    else
+      KUBE_PS1_STATUS_COLOR="yellow"
+      KUBE_PS1_STATUS=" LOGGED-OUT"
+    fi
+  else
+    KUBE_PS1_STATUS_COLOR="white"
+    KUBE_PS1_STATUS=" kubectl is not available"
+  fi
+  
+  KUBE_PS1_STATUS="$(_kube_ps1_color_fg $KUBE_PS1_STATUS_COLOR)${KUBE_PS1_STATUS}${KUBE_PS1_RESET_COLOR}"
 }
 
 # Set kube-ps1 shell defaults
@@ -359,6 +380,11 @@ kube_ps1() {
       KUBE_PS1+="${KUBE_PS1_DIVIDER}"
     fi
     KUBE_PS1+="$(_kube_ps1_color_fg ${KUBE_PS1_NS_COLOR})${KUBE_PS1_NAMESPACE}${KUBE_PS1_RESET_COLOR}"
+  fi
+
+  # Status
+  if [[ "${KUBE_PS1_SHOW_STATUS}" == true ]]; then
+    KUBE_PS1+="${KUBE_PS1_STATUS}"
   fi
 
   # Suffix
